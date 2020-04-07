@@ -29,6 +29,27 @@ spec:
       labels:
         app: ignite
     spec:
+      affinity:
+        # Ensure correct node-pool
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: workload
+                operator: In
+                values:
+                - ignite-node
+        # Strictly one Ignite server pod per host
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - ignite
+            topologyKey: kubernetes.io/hostname
+
       serviceAccountName: ignite
       containers:
       - name: ignite
