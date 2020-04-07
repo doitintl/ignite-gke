@@ -24,7 +24,7 @@ Main difference compared to the official [guide](https://apacheignite.readme.io/
 * Switched Load Balancer session affinity to Round Robbin to ensure even client load distribution
 
 ## How to launch the setup
-The create a new GKE cluster and launch Apache Ignite into it, use the following commands:
+To create a new GKE cluster and launch Apache Ignite into it, use the following commands:
 
 ```
 make PROJECT=<your project name> gke-create
