@@ -21,6 +21,7 @@ Main difference compared to the official [guide](https://apacheignite.readme.io/
 * Propagating k8s node's availability zone name into Ignite pod in attempt to configure
   zone-aware primary/backup partition distribution. Still WIP on the ignite side
   ([SO question](https://stackoverflow.com/questions/61062929/apache-ignite-zonerack-aware-parititons/61064478#61064478))
+* Switched Load Balancer session affinity to Round Robbin to ensure even client load distribution
 
 ## How to launch the setup
 The create a new GKE cluster and launch Apache Ignite into it, use the following commands:
