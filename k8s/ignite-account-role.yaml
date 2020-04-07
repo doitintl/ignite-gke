@@ -22,6 +22,7 @@ rules:
 - apiGroups:
   - ""
   resources: # Here are resources you can access
+  - nodes
   - pods
   - endpoints
   verbs: # That is what you can do with them
