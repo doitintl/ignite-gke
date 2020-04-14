@@ -7,6 +7,8 @@ GKE_NAME = ignite
 INSTANCE_TYPE = n2-highmem-2
 IGNITE_STORAGE_NODES = 2
 
+CACHE = zac
+
 gke-storage-pool-create:
 	gcloud container node-pools create ignite-nodes --cluster=$(GKE_NAME) \
 		--region=$(REGION) \
@@ -29,14 +31,13 @@ gke-create:
 	gcloud container node-pools delete default-pool --region=$(REGION) --quiet --cluster=$(GKE_NAME)
 
 gke-delete:
-	gcloud container clusters delete --quiet $(GKE_NAME) ||:
+	gcloud container clusters delete --quiet $(GKE_NAME) --region=$(REGION) ||:
 
 ignite-config:
 	kubectl create configmap --namespace=ignite ignite-config \
 			--from-file ignite-config.xml -o yaml --dry-run | kubectl apply -f -
 
-ignite-launch: ignite-config
-	kubectl create configmap --namespace=ignite ignite-config \
+ignite-launch:
 	cd k8s && \
 		for manifest in ignite-namespace.yaml \
 						ignite-account-role.yaml \
@@ -44,7 +45,26 @@ ignite-launch: ignite-config
 						ignite-service-account.yaml \
 						ignite-persistence-storage-class.yaml \
 						ignite-service.yaml \
-						ignite-stateful-set.yaml; \
+						; \
 		do \
 			kubectl apply -f $$manifest; \
 		done
+	kubectl config set-context $(kubectl config current-context) --namespace=ignite
+	$(MAKE) ignite-config
+	kubectl apply -f k8s/ignite-stateful-set.yaml
+
+ignite-activate:
+	kubectl exec ignite-0 -- /opt/ignite/apache-ignite/bin/control.sh --activate
+	kubectl exec ignite-0 -- /opt/ignite/apache-ignite/bin/control.sh --baseline
+
+port-forward:
+	kubectl port-forward pod/ignite-0 8080 --namespace=ignite
+
+create-cache:
+	curl -vv 'localhost:8080/ignite?cmd=getorcreate&cacheName=$(CACHE)&templateName=zone-aware-cache'
+
+ignite-rerun:
+	$(MAKE) ignite-config
+	kubectl delete -f k8s/ignite-stateful-set.yaml
+	sleep 20s  # make sure that config map propagates
+	kubectl apply -f k8s/ignite-stateful-set.yaml

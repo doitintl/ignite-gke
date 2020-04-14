@@ -18,9 +18,8 @@ Main difference compared to the official [guide](https://apacheignite.readme.io/
 * Localized config file through k8s configmap instead of pulling it from 3rd party GitHub repo
 * Changed ignite k8s service to create *internal* L4 TCP Load Balancer instead of public L3
   load balancer it is in the community guide (which opens you freshly created cluster to the world)
-* Propagating k8s node's availability zone name into Ignite pod in attempt to configure
-  zone-aware primary/backup partition distribution. Still WIP on the ignite side
-  ([SO question](https://stackoverflow.com/questions/61062929/apache-ignite-zonerack-aware-parititons/61064478#61064478))
+* Propagating k8s node's availability zone name into Ignite pod and having a proper cache template
+  in the node config.
 * Switched Load Balancer session affinity to Round Robbin to ensure even client load distribution
 
 ## How to launch the setup
@@ -30,3 +29,25 @@ To create a new GKE cluster and launch Apache Ignite into it, use the following 
 make PROJECT=<your project name> gke-create
 make ignite-launch
 ```
+Wait till pods are up and the run ``make ignite-activate`` - only required for the first
+time after cluster creation.
+
+If you change `ignite-config.xml` you can apply new config **and restart the cluster**
+(the data is preserved) by running `make ignite rerun`.
+
+### REST API quick access
+
+* To activate REST API port forwarding on `localhost:8080` run `make por-forward`
+* Then you can register on `console.gridgain.com` for free, download their agent and to run it
+  locally to have a UI view on your cluster
+* Also you can access your cluster's REST API on `localhost:8080`
+
+## Zone-Awareness
+
+Cluster K8s setup has zone-awareness pre-configured, including a proper cache-templated called
+`zone-awareness-cache`. To test zone awareness allocation you can:
+
+* Create a test cache from template by running `make create-cache CACHE=<your cache name`
+* Check that partitions are properly distributed between zones (i.e. that there are no
+  both primary and backup partition in the same node): `./check.py <your cache name>`
+  (the tool requires Python 3.6+ available. No extra libraries are needed)
