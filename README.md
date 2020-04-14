@@ -2,7 +2,7 @@
 
 Out take on running Apache Ignite in GKE properly.
 
-Main difference compared to the official [guide](https://apacheignite.readme.io/docs/google-cloud-deployment):
+The main differences to the official [guide](https://apacheignite.readme.io/docs/google-cloud-deployment):
 
 * Switch to SSD PD since Apache Ignite quickly becomes IO bound
 * WAL is kept on the same disk as the main data -
@@ -17,8 +17,8 @@ Main difference compared to the official [guide](https://apacheignite.readme.io/
 * Stateful set launches pods in parallel to speed up the startup
 * Localized config file through k8s configmap instead of pulling it from 3rd party GitHub repo
 * Changed ignite k8s service to create *internal* L4 TCP Load Balancer instead of public L3
-  load balancer it is in the community guide (which opens you freshly created cluster to the world)
-* Propagating k8s node's availability zone name into Ignite pod and having a proper cache template
+  load balancer as it is in the community guide (which opens you freshly created cluster to the world)
+* Propagating k8s node's availability zone name into Ignite pod and providing a proper cache template
   in the node config.
 * Switched Load Balancer session affinity to Round Robbin to ensure even client load distribution
 
