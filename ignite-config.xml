@@ -66,12 +66,12 @@
           <property name="statisticsEnabled" value="true"/>
           <property name="affinity">
             <bean class="org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction">
-              <property name="excludeNeighbors" value="true"/>
+              <property name="excludeNeighbors" value="false"/>  <!-- This is CRUCIAL to make zone-awareness to work! -->
               <property name="affinityBackupFilter">
                 <bean class="org.apache.ignite.cache.affinity.rendezvous.ClusterNodeAttributeAffinityBackupFilter">
                   <constructor-arg>
+                    <!-- Backups must go to different AZs -->
                     <array value-type="java.lang.String">
-                      <!-- Backups must go to different AZs -->
                       <value>AVAILABILITY_ZONE</value>
                     </array>
                   </constructor-arg>
