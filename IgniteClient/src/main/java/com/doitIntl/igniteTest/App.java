@@ -1,3 +1,6 @@
+package com.doitIntl.igniteTest;
+
+import com.google.devtools.common.options.OptionsParser;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -8,23 +11,30 @@ import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class Main {
+public class App {
 
     public static void main(String[] args) {
-        String host = args.length > 0 ? args[0] : "localhost:10800";
-        ClientConfiguration cfg = new ClientConfiguration().setAddresses(host);
-        int lowerBound = args.length > 1 ? Integer.parseInt(args[1]) : 1;
-        int count = args.length > 2 ? Integer.parseInt(args[2]) : 100;
-        String verb = args.length > 3 ? args[3].toUpperCase() : "";
-        String cacheName = args.length > 4 ? args[4] : "int-string-cache";
-        int clientCount = args.length > 5 ? Integer.parseInt(args[5]) : 3;
-        int upperBound = args.length > 6 ? Integer.parseInt(args[6]) : -1;
+        OptionsParser parser = OptionsParser.newOptionsParser(IgniteTestClientOptions.class);
+        parser.parseAndExitUponError(args);
+        IgniteTestClientOptions options = parser.getOptions(IgniteTestClientOptions.class);
+        if (options.host.isEmpty() || options.help) {
+            printUsage(parser);
+            return;
+        }
+
+        String host = String.format("%s:%d", options.host, options.port);
+
+        int lowerBound = options.lowerBound;
+        int count = options.count;
+        String cacheName = options.name;
+        int clientCount = options.sockets;
+        int upperBound = options.upperBound;
 
         Random r = new Random();
 
@@ -36,7 +46,7 @@ public class Main {
                     .setCacheMode(CacheMode.PARTITIONED).setName(CACHE_NAME).setReadFromBackup(true)
                     .setBackups(1).setStatisticsEnabled(true);
 
-
+            ClientConfiguration cfg = new ClientConfiguration().setAddresses(host);
             IgniteClient[] clients = new IgniteClient[clientCount];
             ClientCache<Integer, String>[] caches = new ClientCache[clientCount];
             for (int i = 0; i < clientCount; i++) {
@@ -46,19 +56,17 @@ public class Main {
 
             final String value = createStringValue();
 
-            if (verb.equals("") || verb.equals("PUT")) {
+            if (options.put) {
                 runBatch("PUT", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
-                    //System.out.printf("PUT%d ", nextKey);
                     (caches[key % clientCount]).put(nextKey, value);
                 }, lowerBound, count);
                 System.out.println();
             }
 
-            if (verb.equals("") || verb.equals("GET")) {
+            if (options.get) {
                 runBatch("GET", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
-                    //System.out.printf("GET%d ", nextKey);
                     (caches[key % clientCount]).get(nextKey);
                 }, lowerBound, count);
                 System.out.println();
@@ -75,7 +83,9 @@ public class Main {
     }
 
     public static void runBatch(String operationName, Consumer<Integer> operation, int lowerBound, int count) {
-        long[] nsLog = new long[count];
+        var nsLog = new long[count];
+        var msLog = new double[count];
+
         long startBatch = System.nanoTime();
         IntStream.rangeClosed(lowerBound, (count + lowerBound - 1)).parallel().forEach(index -> {
             long start = System.nanoTime();
@@ -99,7 +109,6 @@ public class Main {
         long max = 0L;
         long sum = 0L;
 
-        var msLog = new double[count];
         for (int i = 0; i < count; i++) {
 
             long nanoseconds = nsLog[i];
@@ -138,10 +147,15 @@ public class Main {
         System.out.println(descriptiveStatistics);
     }
 
-    @NotNull
     private static String createStringValue() {
         final var charArray = new char[512];
         IntStream.range(0, 512).forEach(i -> charArray[i] = (char) (33 + i % 93));
         return new String(charArray);
+    }
+
+    private static void printUsage(OptionsParser parser) {
+        System.out.println("Usage: java -jar igniteTestClient-0.1.0.jar OPTIONS");
+        System.out.println(parser.describeOptions(Collections.<String, String>emptyMap(),
+                OptionsParser.HelpVerbosity.LONG));
     }
 }
