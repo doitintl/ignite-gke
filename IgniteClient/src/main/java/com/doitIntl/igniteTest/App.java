@@ -48,28 +48,44 @@ public class App {
 
             ClientConfiguration cfg = new ClientConfiguration().setAddresses(host);
             IgniteClient[] clients = new IgniteClient[clientCount];
+
+            System.out.format("Creating %d connections to %s ", clientCount, host);
+
             ClientCache<Integer, String>[] caches = new ClientCache[clientCount];
             for (int i = 0; i < clientCount; i++) {
                 clients[i] = Ignition.startClient(cfg);
                 caches[i] = clients[i].getOrCreateCache(cacheConf);
+                System.out.print(".");
             }
+            System.out.println();
+
+            System.out.format("Cache name: %s", cacheName);
+
+            System.out.println();
 
             final String value = createStringValue();
 
             if (options.put) {
+                System.out.format("PUT %d items between %d and %d", count, lowerBound, upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
                 runBatch("PUT", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
                     (caches[key % clientCount]).put(nextKey, value);
                 }, lowerBound, count);
                 System.out.println();
+            } else {
+                System.out.println("Skipping PUT. Use option --put to enable PUT.");
             }
+            System.out.println();
 
             if (options.get) {
+                System.out.format("GET %d items between %d and %d", count, lowerBound, upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
                 runBatch("GET", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
                     (caches[key % clientCount]).get(nextKey);
                 }, lowerBound, count);
                 System.out.println();
+            } else {
+                System.out.println("Skipping GET. Use option --get to enable GET.");
             }
         } catch (ClientException e) {
             System.err.println(e.getMessage());

@@ -78,14 +78,14 @@ public class IgniteTestClientOptions extends OptionsBase {
 
     @Option(
             name = "get",
-            help = "Perform GET requests. true/false",
+            help = "Perform GET requests.",
             defaultValue = "false"
     )
     public boolean get;
 
     @Option(
             name = "put",
-            help = "Perform PUT requests. true/false",
+            help = "Perform PUT requests.",
             defaultValue = "false"
     )
     public boolean put;

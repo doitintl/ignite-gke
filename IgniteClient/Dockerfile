@@ -7,4 +7,4 @@ RUN mvn -f /usr/src/app/pom.xml dependency:copy-dependencies package -o
 FROM openjdk:14-alpine
 COPY --from=build /usr/src/app/target/igniteTestClient-0.1.0.jar /usr/app/igniteTestClient-0.1.0.jar
 COPY --from=build /usr/src/app/target/dependency /usr/app/dependency
-ENTRYPOINT ["java","-XX:MaxRAMPercentage=95.0","-jar","/usr/app/igniteTestClient-0.1.0.jar"]  
+ENTRYPOINT ["java","--add-opens=java.base/java.nio=ALL-UNNAMED", "-XX:MaxRAMPercentage=95.0","-jar","/usr/app/igniteTestClient-0.1.0.jar"]
