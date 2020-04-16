@@ -49,7 +49,7 @@ ignite-launch:
 		do \
 			kubectl apply -f $$manifest; \
 		done
-	kubectl config set-context $(kubectl config current-context) --namespace=ignite
+	kubectl config set-context --current  --namespace=ignite
 	$(MAKE) ignite-config
 	kubectl apply -f k8s/ignite-stateful-set.yaml
 

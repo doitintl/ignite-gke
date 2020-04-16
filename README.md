@@ -29,7 +29,8 @@ To create a new GKE cluster and launch Apache Ignite into it, use the following 
 make PROJECT=<your project name> gke-create
 make ignite-launch
 ```
-Wait till pods are up and the run ``make ignite-activate`` - only required for the first
+Wait till pods are up (run ``kubectl get pods`` and confirm the status of each pod is "Running"). 
+Then run ``make ignite-activate`` - only required for the first
 time after cluster creation.
 
 If you change `ignite-config.xml` you can apply new config **and restart the cluster**
