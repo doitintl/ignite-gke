@@ -19,39 +19,39 @@ import java.util.stream.IntStream;
 
 public class App {
 
-    public static void main(String[] args) {
-        OptionsParser parser = OptionsParser.newOptionsParser(IgniteTestClientOptions.class);
+    public static void main(final String[] args) {
+        final OptionsParser parser = OptionsParser.newOptionsParser(IgniteTestClientOptions.class);
         parser.parseAndExitUponError(args);
-        IgniteTestClientOptions options = parser.getOptions(IgniteTestClientOptions.class);
+        final IgniteTestClientOptions options = parser.getOptions(IgniteTestClientOptions.class);
         if (options.host.isEmpty() || options.help) {
             printUsage(parser);
             return;
         }
 
-        String host = String.format("%s:%d", options.host, options.port);
+        final String host = String.format("%s:%d", options.host, options.port);
 
-        int lowerBound = options.lowerBound;
-        int count = options.count;
-        String cacheName = options.name;
-        int clientCount = options.sockets;
-        int upperBound = options.upperBound;
+        final int lowerBound = options.lowerBound;
+        final int count = options.count;
+        final String cacheName = options.name;
+        final int clientCount = options.sockets;
+        final int upperBound = options.upperBound;
 
-        Random r = new Random();
+        final Random r = new Random();
 
         try {
             final String CACHE_NAME = cacheName;
 
-            var cacheConf = new ClientCacheConfiguration().setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            final var cacheConf = new ClientCacheConfiguration().setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
-                    .setCacheMode(CacheMode.PARTITIONED).setName(CACHE_NAME).setReadFromBackup(true)
-                    .setBackups(1).setStatisticsEnabled(true);
+                    .setCacheMode(CacheMode.PARTITIONED).setName(CACHE_NAME).setReadFromBackup(true).setBackups(1)
+                    .setStatisticsEnabled(true);
 
-            ClientConfiguration cfg = new ClientConfiguration().setAddresses(host);
-            IgniteClient[] clients = new IgniteClient[clientCount];
+            final ClientConfiguration cfg = new ClientConfiguration().setAddresses(host);
+            final IgniteClient[] clients = new IgniteClient[clientCount];
 
             System.out.format("Creating %d connections to %s ", clientCount, host);
 
-            ClientCache<Integer, String>[] caches = new ClientCache[clientCount];
+            final ClientCache<Integer, char[]>[] caches = new ClientCache[clientCount];
             for (int i = 0; i < clientCount; i++) {
                 clients[i] = Ignition.startClient(cfg);
                 caches[i] = clients[i].getOrCreateCache(cacheConf);
@@ -63,10 +63,11 @@ public class App {
 
             System.out.println();
 
-            final String value = createStringValue();
+            final char[] value = createStringValue();
 
             if (options.put) {
-                System.out.format("PUT %d items between %d and %d", count, lowerBound, upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
+                System.out.format("PUT %d items between %d and %d", count, lowerBound,
+                        upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
                 runBatch("PUT", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
                     (caches[key % clientCount]).put(nextKey, value);
@@ -78,48 +79,50 @@ public class App {
             System.out.println();
 
             if (options.get) {
-                System.out.format("GET %d items between %d and %d", count, lowerBound, upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
+                System.out.format("GET %d items between %d and %d", count, lowerBound,
+                        upperBound < lowerBound ? lowerBound + count - 1 : upperBound);
                 runBatch("GET", key -> {
                     final var nextKey = getNextKey(lowerBound, upperBound, r, key);
-                    (caches[key % clientCount]).get(nextKey);
+                    final var returnValue = (caches[key % clientCount]).get(nextKey);
+                    // System.out.println(returnValue);
                 }, lowerBound, count);
                 System.out.println();
             } else {
                 System.out.println("Skipping GET. Use option --get to enable GET.");
             }
-        } catch (ClientException e) {
+        } catch (final ClientException e) {
             System.err.println(e.getMessage());
-        } catch (Exception e) {
+        } catch (final Exception e) {
             System.err.format("Unexpected failure: %s\n", e);
         }
     }
 
-    public static int getNextKey(int lowerBound, int upperBound, Random r, Integer key) {
+    public static int getNextKey(final int lowerBound, final int upperBound, final Random r, final Integer key) {
         return upperBound < lowerBound ? key : lowerBound + r.nextInt(upperBound - lowerBound);
     }
 
-    public static void runBatch(String operationName, Consumer<Integer> operation, int lowerBound, int count) {
-        var nsLog = new long[count];
-        var msLog = new double[count];
+    public static void runBatch(final String operationName, final Consumer<Integer> operation, final int lowerBound,
+            final int count) {
+        final var nsLog = new long[count];
+        final var msLog = new double[count];
 
-        long startBatch = System.nanoTime();
+        final long startBatch = System.nanoTime();
         IntStream.rangeClosed(lowerBound, (count + lowerBound - 1)).parallel().forEach(index -> {
-            long start = System.nanoTime();
+            final long start = System.nanoTime();
             operation.accept(index);
-            long finish = System.nanoTime();
-            long timeElapsed = finish - start;
+            final long finish = System.nanoTime();
+            final long timeElapsed = finish - start;
             nsLog[index - lowerBound] = timeElapsed;
         });
-        long endBatch = System.nanoTime();
+        final long endBatch = System.nanoTime();
 
         final var nanosecondsPerMillisecond = 1.0E06;
 
-        double threshold1 = 15 * nanosecondsPerMillisecond;
-        double threshold2 = 20 * nanosecondsPerMillisecond;
+        final double threshold1 = 15 * nanosecondsPerMillisecond;
+        final double threshold2 = 20 * nanosecondsPerMillisecond;
 
         int countBelowThreshold1 = 0;
         int countBelowThreshold2 = 0;
-
 
         long min = Long.MAX_VALUE;
         long max = 0L;
@@ -127,7 +130,7 @@ public class App {
 
         for (int i = 0; i < count; i++) {
 
-            long nanoseconds = nsLog[i];
+            final long nanoseconds = nsLog[i];
             msLog[i] = (double) nanoseconds / nanosecondsPerMillisecond;
 
             sum += nanoseconds;
@@ -149,27 +152,29 @@ public class App {
             }
 
         }
-        var mean = sum / count;
+        final var mean = sum / count;
 
         final var nanosecondsPerSecond = 1.0E09;
-        System.out.format("\n[%s] [%s] items in [%s] seconds. Avg [%s] items/second.\nMin: [%s] ms\nMax: [%s] ms\nMean: [%s] ms\nBelow [%s] ms: [%s] ([%s] %%)\nBelow [%s] ms: [%s] ([%s] %%)\n\n",
+        System.out.format(
+                "\n[%s] [%s] items in [%s] seconds. Avg [%s] items/second.\nMin: [%s] ms\nMax: [%s] ms\nMean: [%s] ms\nBelow [%s] ms: [%s] ([%s] %%)\nBelow [%s] ms: [%s] ([%s] %%)\n\n",
                 operationName, count, (endBatch - startBatch) / nanosecondsPerSecond,
-                count / ((endBatch - startBatch) / nanosecondsPerSecond),
-                min / nanosecondsPerMillisecond, max / nanosecondsPerMillisecond, mean / nanosecondsPerMillisecond,
+                count / ((endBatch - startBatch) / nanosecondsPerSecond), min / nanosecondsPerMillisecond,
+                max / nanosecondsPerMillisecond, mean / nanosecondsPerMillisecond,
                 threshold1 / nanosecondsPerMillisecond, countBelowThreshold1, 100.0 * countBelowThreshold1 / count,
                 threshold2 / nanosecondsPerMillisecond, countBelowThreshold2, 100.0 * countBelowThreshold2 / count);
 
-        DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics(msLog);
+        final DescriptiveStatistics descriptiveStatistics = new DescriptiveStatistics(msLog);
         System.out.println(descriptiveStatistics);
     }
 
-    private static String createStringValue() {
-        final var charArray = new char[512];
-        IntStream.range(0, 512).forEach(i -> charArray[i] = (char) (33 + i % 93));
-        return new String(charArray);
+    private static char[] createStringValue() {
+        final var charArray = new char[1024];
+        IntStream.range(0, 1024).forEach(i -> charArray[i] = (char) (33 + i % 93));
+        // System.out.println(new String(charArray));
+        return charArray;
     }
 
-    private static void printUsage(OptionsParser parser) {
+    private static void printUsage(final OptionsParser parser) {
         System.out.println("Usage: java -jar igniteTestClient-0.1.0.jar OPTIONS");
         System.out.println(parser.describeOptions(Collections.<String, String>emptyMap(),
                 OptionsParser.HelpVerbosity.LONG));
