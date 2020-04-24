@@ -29,7 +29,8 @@ To create a new GKE cluster and launch Apache Ignite into it, use the following 
 make PROJECT=<your project name> gke-create
 make ignite-launch
 ```
-Wait till pods are up (run ``kubectl get pods`` and confirm the status of each pod is "Running"). 
+Wait till pods are up (run ``kubectl get pods`` and confirm the status of each pod is "Running").
+
 Then run ``make ignite-activate`` - only required for the first
 time after cluster creation.
 
@@ -52,3 +53,43 @@ Cluster K8s setup has zone-awareness pre-configured, including a proper cache-te
 * Check that partitions are properly distributed between zones (i.e. that there are no
   both primary and backup partition in the same node): `./check.py <your cache name>`
   (the tool requires Python 3.6+ available. No extra libraries are needed)
+
+
+## Test Client
+To build the test client:
+* Clone this git repo
+* Navigate to the [IgniteClient](IgniteClient) directory
+* Build the local Dockerfile and give it an appropriate tag. E.g. ``docker build -t ignite_test .``
+
+On build success, to run the test client:
+* To view all command line options, run without arguments: ``docker run ignite_test``:
+```
+Options category 'misc':
+  --[no]get (a boolean; default: "false")
+    Perform GET requests. true/false
+  --[no]help [-h] (a boolean; default: "false")
+    Prints usage info.
+  --[no]put (a boolean; default: "false")
+    Perform PUT requests. true/false
+Options category 'server settings':
+  --host [-o] (a string; default: "")
+    The Ignite server host.
+  --name [-n] (a string; default: "test-cache")
+    The name of the cache.
+  --port [-p] (an integer; default: "10800")
+    The server port.
+Options category 'test setup':
+  --count [-c] (an integer; default: "100")
+    The count of objects to be processed.
+  --lowerbound [-l] (an integer; default: "1")
+    The lower bound of the integer key range.
+  --sockets [-s] (an integer; default: "3")
+    Parallel socket count.
+  --upperbound [-u] (an integer; default: "-1")
+    The upper bound of the integer key range. Must be set for random key 
+    selection. If less than lower bound or left blank, upper bound will be 
+    lower bound+count-1 and each key will be selected in that range will be 
+    selected exactly once.
+```
+* The only required argument is the ``--host`` option. E.g. if the load balancer listens on IP ``10.128.0.21`` then the command ``docker run ignite_test --host 10.128.0.21`` can be used to establish connectivity (3 connections by default, this can be adjusted using the ``--sockets`` option). This will not try to insert or retrieve any data from the cluster. To put or get items the ``--put`` and/or ``--get`` options need to be specified.
+* This command inserts, then tries to retrieve 100,000 objects with random keys between 1 and 100,000,000:  ``docker run ignite_test --get --put --host 10.128.0.21 --count 100000 --upperbound 100000000``
