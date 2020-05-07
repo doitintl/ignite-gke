@@ -121,4 +121,4 @@ spec:
       storageClassName: "ignite-persistence-storage-class"
       resources:
         requests:
-          storage: "500Gi"
+          storage: "1000Gi"
