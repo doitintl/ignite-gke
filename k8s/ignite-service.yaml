@@ -24,6 +24,8 @@ metadata:
     cloud.google.com/load-balancer-type: "Internal"
 spec:
   type: LoadBalancer
+  # https://cloud.google.com/kubernetes-engine/docs/concepts/network-overview/#:~:text=externalTrafficPolicy
+  externalTrafficPolicy: Local
   ports:
     - name: rest
       port: 8080
