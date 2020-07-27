@@ -2,7 +2,7 @@ PROJECT = zaar-playground
 REGION = us-central1
 ZONES = "us-central1-a,us-central1-c"
 
-GKE_VERSION = 1.14.10-gke.27
+GKE_VERSION = 1.16.11-gke.5
 GKE_NAME = ignite
 INSTANCE_TYPE = n2-highmem-2
 IGNITE_STORAGE_NODES = 2
