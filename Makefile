@@ -18,6 +18,7 @@ gke-storage-pool-create:
 
 gke-create:
 	gcloud beta container clusters create $(GKE_NAME) \
+		--addons=GcePersistentDiskCsiDriver \
 		--num-nodes=1 \
 		--region=$(REGION) \
 		--cluster-version=$(GKE_VERSION) \

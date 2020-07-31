@@ -19,6 +19,8 @@ apiVersion: storage.k8s.io/v1
 metadata:
   name: ignite-persistence-storage-class  #StorageClass Name
   namespace: ignite         #Ignite namespace
-provisioner: kubernetes.io/gce-pd
+provisioner: pd.csi.storage.gke.io
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
 parameters:
   type: pd-balanced #Type pd-standard or pd-ssd. Default: pd-standard
